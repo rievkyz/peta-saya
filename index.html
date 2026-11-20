@@ -2,74 +2,172 @@
 <html lang="id"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14532d">
+<meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Peta Saya</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-:root{--bg:#fbfaf6;--ink:#1c2a21;--mute:#66736b;--line:#dfe3da;--brand:#14532d;--accent:#e8590c;--r:14px}
+:root{--green:#0a8a2a;--ink:#1f2933;--mute:#5f6b76;--line:#e3e6ea;--nav:66px;--orange:#f26a1b;--bg:#fff}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
-#map{position:absolute;inset:0;background:#e9ece4}
-.top{position:absolute;z-index:500;top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:10px;display:flex;gap:8px}
-.top input{flex:1;min-width:0;height:48px;border:0;border-radius:24px;padding:0 18px;font:inherit;background:var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.25)}
-.fab{width:48px;height:48px;border:0;border-radius:50%;background:var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:20px;color:var(--ink);cursor:pointer;display:grid;place-items:center;flex:none}
-.fab.on{background:var(--accent);color:#fff}
-.side{position:absolute;z-index:500;right:10px;top:calc(70px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:8px}
-.sheet{position:absolute;z-index:600;left:0;right:0;bottom:0;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.25);padding:8px 14px calc(12px + env(safe-area-inset-bottom,0px));max-height:55%;display:flex;flex-direction:column;transition:transform .25s}
-.sheet.min{transform:translateY(calc(100% - 64px - env(safe-area-inset-bottom,0px)))}
-.grab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 8px}
-.head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px}
-.head b{font-size:16px}
-.btn{border:0;border-radius:20px;background:var(--brand);color:#fff;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
-.btn.alt{background:transparent;color:var(--brand);border:1.5px solid var(--brand)}
-.list{overflow:auto;margin-top:6px}
-.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
-.dot{width:14px;height:14px;border-radius:50%;flex:none}
-.row .n{flex:1;min-width:0}
-.row .n div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .n small{color:var(--mute)}
-.ic{border:0;background:none;font-size:18px;padding:6px 8px;cursor:pointer;color:var(--ink)}
-.empty{color:var(--mute);padding:14px 0 6px}
-.chip{position:absolute;z-index:550;left:50%;transform:translateX(-50%);top:calc(68px + env(safe-area-inset-top,0px));background:var(--ink);color:#fff;border-radius:20px;padding:8px 14px;font-weight:600;display:none;white-space:nowrap}
+html,body{height:100%;margin:0;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);overflow:hidden}
+#map{position:absolute;left:0;right:0;top:0;bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px));background:#dde3ec}
+.leaflet-tile-pane{filter:saturate(.85) hue-rotate(-8deg) brightness(.99)}
+.leaflet-control-attribution{font-size:9px;opacity:.8}
+.hud{position:absolute;z-index:500;top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:10px;display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none}
+.hud>*{pointer-events:auto}
+.avatar{width:88px;height:88px;position:relative;border:0;background:none;padding:0;cursor:pointer;margin:-2px 0 0 -2px}
+.avatar svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
+.avatar .ph{position:absolute;left:19%;top:19%;width:62%;height:62%;border-radius:50%;background:#cfd6dc center/cover no-repeat;border:3px solid var(--green)}
+.pill{margin-top:4px;min-width:140px;height:54px;border-radius:30px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font:inherit;color:var(--ink);cursor:pointer;padding:0 22px}
+.pill b{font-size:18px;line-height:1}
+.pill svg{width:24px;height:24px}
+.bubble{position:relative;background:#eef1f4;border-radius:14px;padding:5px 14px;font-weight:700;font-size:14px;color:#3a4650}
+.bubble:after{content:"";position:absolute;left:18px;bottom:-6px;border:6px solid transparent;border-top-color:#eef1f4;border-bottom:0}
+.power{width:62px;height:62px;border-radius:50%;border:0;box-shadow:0 2px 10px rgba(0,0,0,.35);display:grid;place-items:center;cursor:pointer;background:var(--green);color:#fff;flex:none;transition:background .2s}
+.power svg{width:32px;height:32px}.power.off{background:#111}
+.fabs{position:absolute;z-index:500;right:12px;bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 28px);display:flex;flex-direction:column;gap:12px}
+.fab{width:58px;height:58px;border-radius:50%;border:0;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.3);display:grid;place-items:center;cursor:pointer;padding:0}
+.fab svg{width:30px;height:30px}.fab.sm{width:48px;height:48px;align-self:flex-end}.fab.sm svg{width:24px;height:24px}
+nav{position:absolute;z-index:800;left:0;right:0;bottom:0;height:calc(var(--nav) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:#fff;display:flex;box-shadow:0 -1px 0 var(--line)}
+nav button{flex:1;border:0;background:none;font:inherit;font-size:13px;color:#4b5560;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;cursor:pointer}
+nav button svg{width:26px;height:26px}
+nav button.on{color:var(--green);font-weight:700}
+nav button.on:before{content:"";position:absolute;left:0;right:0;top:0;height:60%;background:linear-gradient(#0a8a2a22,transparent);border-top:3px solid var(--green)}
+.panel{position:absolute;z-index:700;left:0;right:0;top:0;bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px));background:#f6f7f8;display:none;padding:calc(24px + env(safe-area-inset-top,0px)) 20px 20px}
+.panel.on{display:block}.panel h1{margin:0 0 8px;font-size:24px}.panel p{color:var(--mute);max-width:36ch}
+.scrim{position:absolute;z-index:900;inset:0;background:rgba(0,0,0,.35);display:none}.scrim.on{display:block}
+.sheet{position:absolute;z-index:950;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));max-height:75%;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .25s;box-shadow:0 -4px 18px rgba(0,0,0,.25)}
+.sheet.on{transform:none}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.head b{font-size:17px}
+.btn{border:0;border-radius:20px;background:var(--green);color:#fff;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+.seg{display:flex;gap:6px;margin:4px 0 8px}.seg button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px 4px;font:inherit;font-size:13px;cursor:pointer}.seg button.on{border-color:var(--green);color:var(--green);font-weight:700}
+.list{overflow:auto}.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}.row .n{flex:1;min-width:0}.row .n div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row small{color:var(--mute)}
+.ic{border:0;background:none;font-size:18px;padding:6px 8px;cursor:pointer;color:var(--ink)}.empty{color:var(--mute);padding:12px 0}
 .pin{width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45)}
-.me{width:16px;height:16px;border-radius:50%;background:#1971c2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(25,113,194,.25)}
+.me{width:34px;height:34px;border-radius:50%;background:var(--green);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.45);display:grid;place-items:center}
+.me svg{width:18px;height:18px}
 .leaflet-popup-content{font:14px/1.4 system-ui,sans-serif}.leaflet-popup-content b{display:block;margin-bottom:2px}
-.toast{position:absolute;z-index:700;left:50%;top:calc(120px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;max-width:88%;display:none}
+.toast{position:absolute;z-index:999;left:50%;top:calc(110px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;max-width:88%;display:none;text-align:center}
 </style></head><body>
 <div id="map"></div>
-<div class="top"><input id="q" placeholder="Cari titik atau ketik lat, lng" enterkeyhint="search"><button class="fab" id="gps" title="Lokasi saya">◎</button></div>
-<div class="side">
-  <button class="fab" id="base" title="Ganti peta">▦</button>
-  <button class="fab" id="ruler" title="Ukur jarak">⟷</button>
-  <button class="fab" id="fit" title="Tampilkan semua">⤢</button>
+
+<div class="hud">
+  <button class="avatar" id="avatar" aria-label="Ganti foto profil"><span class="ph" id="ph"></span></button>
+  <button class="pill" id="pill" aria-label="Status"></button>
+  <button class="power" id="power" aria-label="Online atau offline"></button>
 </div>
-<div class="chip" id="chip"></div><div class="toast" id="toast"></div>
+
+<div class="fabs">
+  <button class="fab sm" id="layersBtn" aria-label="Layer dan file"><svg viewBox="0 0 24 24" fill="none" stroke="#1f2933" stroke-width="2" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></svg></button>
+  <button class="fab" id="warn" aria-label="Laporan"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#f26a1b"/><path d="M12 6.5v4.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="13.4" r="1.2" fill="#fff"/></svg></button>
+  <button class="fab" id="gps" aria-label="Lokasi saya"><svg viewBox="0 0 24 24" fill="none" stroke="#0a8a2a" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="2.6" fill="#0a8a2a"/><path d="M4 21l4-9c1-2 3-2 4 0l1 2h6"/><path d="M13 21l3-5h5"/></svg></button>
+</div>
+
+<section class="panel" id="p1"><h1>Pendapatan</h1><p>Halaman ini masih kosong dan siap Anda desain sendiri.</p></section>
+<section class="panel" id="p2"><h1>Swadaya</h1><p>Halaman ini masih kosong dan siap Anda desain sendiri.</p></section>
+<section class="panel" id="p3"><h1>Pesan</h1><p>Halaman ini masih kosong dan siap Anda desain sendiri.</p></section>
+
+<nav id="nav">
+ <button class="on" data-t="0"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 11.2 12 3l9 8.2V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Beranda</button>
+ <button data-t="1"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 7a3 3 0 0 1 3-3h10v3H7a1 1 0 0 0 0 2h12a2 2 0 0 1 2 2v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/><circle cx="16.5" cy="14" r="1.4" fill="#fff"/></svg>Pendapatan</button>
+ <button data-t="2"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.4"/><circle cx="17" cy="9.5" r="2.6"/><path d="M2.5 19c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5zM15.5 14c3 0 6 1.4 6 4.5V19h-4.2c0-2-.7-3.7-1.8-5z"/></svg>Swadaya</button>
+ <button data-t="3"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v.3l-9 5.4-9-5.4zM3 9.2l9 5.4 9-5.4v8.3a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/></svg>Pesan</button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet">
-  <div class="grab" id="grab"></div>
   <div class="head"><b id="cnt">Layer</b><span><button class="btn" id="add">Tambah file</button></span></div>
+  <div class="seg" id="seg"></div>
   <div class="list" id="list"></div>
 </div>
+<div class="toast" id="toast"></div>
 <input type="file" id="file" multiple hidden accept=".gpx,.kml,.kmz,.geojson,.json,.csv,.txt">
+<input type="file" id="pfile" hidden accept="image/*">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const COLORS=['#e8590c','#1971c2','#2b8a3e','#ae3ec9','#c92a2a','#0c8599','#f08c00'];
-const map=L.map('map',{zoomControl:false}).setView([-6.2,106.82],11);
-L.control.zoom({position:'bottomleft'}).addTo(map);
+const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',3200)}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ---------- Peta ---------- */
+const map=L.map('map',{zoomControl:false}).setView([-6.9,107.0],15);
 const bases=[
- {n:'Peta jalan',l:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'})},
- {n:'Peta terang',l:L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'})},
+ {n:'Standar',l:L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'})},
+ {n:'Terang',l:L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'})},
+ {n:'Jalan OSM',l:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'})},
  {n:'Satelit',l:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'})}
 ];
-let bi=+localStorage.getItem('base')||0;bases[bi].l.addTo(map);
-let layers=[],uid=0;
+let bi=LS.get('base',0);if(!bases[bi])bi=0;bases[bi].l.addTo(map);
 
-function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',3500)}
-function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+/* ---------- Avatar ---------- */
+(function(){
+ let s='<svg viewBox="-50 -50 100 100"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#e0a100"/></linearGradient></defs>';
+ for(let i=0;i<14;i++){const a=i*2*Math.PI/14;s+=`<circle cx="${(41*Math.cos(a)).toFixed(1)}" cy="${(41*Math.sin(a)).toFixed(1)}" r="9" fill="url(#g)"/>`}
+ s+='<circle r="42" fill="url(#g)"/><circle r="34" fill="#fff6c9"/><circle r="31" fill="#0a8a2a"/></svg>';
+ $('#avatar').insertAdjacentHTML('afterbegin',s);
+ const def="data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#cfd6dc"/><circle cx="50" cy="38" r="17" fill="#8794a0"/><path d="M14 100c0-24 16-36 36-36s36 12 36 36z" fill="#8794a0"/></svg>');
+ const set=u=>$('#ph').style.backgroundImage=`url("${u}")`;
+ set(LS.get('avatar',def));
+ $('#avatar').onclick=()=>$('#pfile').click();
+ $('#pfile').onchange=e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  const img=new Image();img.onload=()=>{
+   const s=240,c=document.createElement('canvas');c.width=c.height=s;
+   const m=Math.min(img.width,img.height),x=(img.width-m)/2,y=(img.height-m)/2;
+   c.getContext('2d').drawImage(img,x,y,m,m,0,0,s,s);
+   const u=c.toDataURL('image/jpeg',.85);set(u);LS.set('avatar',u)||toast('Foto tidak bisa disimpan permanen');
+   URL.revokeObjectURL(img.src)};
+  img.onerror=()=>toast('File bukan gambar yang valid');img.src=URL.createObjectURL(f);
+ };
+})();
+
+/* ---------- Online / offline ---------- */
+let online=LS.get('online',false),points=LS.get('points',150),meM,meC,first=true;
+const IC_POWER='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.6 6.8a8 8 0 1 0 10.8 0"/></svg>';
+const IC_ON='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.2" fill="#fff" stroke="none"/></svg>';
+const IC_MEDAL='<svg viewBox="0 0 24 24" fill="none" stroke="#1f2933" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="14" r="5.5"/><circle cx="12" cy="14" r="1.8" fill="#1f2933" stroke="none"/><path d="M8.5 3.5 10.5 9M15.5 3.5 13.5 9"/></svg>';
+function applyState(){
+ $('#power').classList.toggle('off',!online);
+ $('#power').innerHTML=online?IC_ON:IC_POWER;
+ $('#pill').innerHTML=online?`${IC_MEDAL}<b>${points}</b>`:'<span class="bubble">Offline</span>';
+ $('#pill').style.height=online?'64px':'54px';
+ if(online){first=true;map.locate({watch:true,setView:false,enableHighAccuracy:true})}
+ else{map.stopLocate();}
+}
+$('#power').onclick=()=>{online=!online;LS.set('online',online);applyState();toast(online?'Anda online':'Anda offline')};
+$('#pill').onclick=()=>{
+ if(!online)return;const v=prompt('Ubah angka:',points);
+ if(v===null)return;const n=parseInt(v,10);if(!isNaN(n)&&n>=0){points=n;LS.set('points',n);applyState()}
+};
+map.on('locationfound',e=>{
+ const html=`<div class="me" style="transform:rotate(${e.heading||0}deg)"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 3 19 20l-7-4-7 4z"/></svg></div>`;
+ const ic=L.divIcon({className:'',html,iconSize:[34,34],iconAnchor:[17,17]});
+ if(meM){meM.setLatLng(e.latlng);meM.setIcon(ic);meC.setLatLng(e.latlng).setRadius(e.accuracy)}
+ else{meM=L.marker(e.latlng,{icon:ic,zIndexOffset:1000}).addTo(map);meC=L.circle(e.latlng,{radius:e.accuracy,color:'#0a8a2a',weight:1,fillOpacity:.08}).addTo(map)}
+ if(first){map.setView(e.latlng,17);first=false}
+});
+map.on('locationerror',()=>toast('Lokasi tidak bisa diakses. Periksa izin lokasi di Chrome dan GPS HP.'));
+$('#gps').onclick=()=>{
+ if(meM){map.setView(meM.getLatLng(),Math.max(map.getZoom(),16))}
+ else{first=true;map.locate({setView:true,maxZoom:17,enableHighAccuracy:true})}
+};
+$('#warn').onclick=()=>toast('Tombol laporan belum diisi fungsi');
+
+/* ---------- Tab bawah ---------- */
+$('#nav').onclick=e=>{
+ const b=e.target.closest('button');if(!b)return;
+ document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
+ const t=+b.dataset.t;
+ document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('on',i+1===t));
+ if(t===0)setTimeout(()=>map.invalidateSize(),50);
+};
 
 /* ---------- Parser ---------- */
 function xml(t){const d=new DOMParser().parseFromString(t,'text/xml');if(d.querySelector('parsererror'))throw Error('XML tidak valid');return d}
@@ -120,6 +218,7 @@ async function readFile(file){
 }
 
 /* ---------- Layer ---------- */
+let layers=[],uid=0;
 function build(o){
  const c=o.color;
  o.group=L.geoJSON(o.data,{
@@ -132,6 +231,7 @@ function build(o){
 }
 function render(){
  $('#cnt').textContent=layers.length?`Layer (${layers.length})`:'Layer';
+ $('#seg').innerHTML=bases.map((b,i)=>`<button data-b="${i}" class="${i===bi?'on':''}">${b.n}</button>`).join('');
  $('#list').innerHTML=layers.length?layers.map(o=>`<div class="row" data-id="${o.id}">
   <span class="dot" style="background:${o.color}"></span>
   <div class="n"><div>${esc(o.name)}</div><small>${o.data.features.length} objek</small></div>
@@ -139,7 +239,7 @@ function render(){
   <button class="ic" data-a="vis" title="Tampil/sembunyi">${o.visible?'👁':'○'}</button>
   <button class="ic" data-a="del" title="Hapus">✕</button></div>`).join(''):'<div class="empty">Belum ada data. Tambahkan file GPX, KML, KMZ, GeoJSON, atau CSV.</div>';
 }
-function save(){try{localStorage.setItem('layers',JSON.stringify(layers.map(({id,name,color,visible,data})=>({id,name,color,visible,data}))))}catch(e){toast('Penyimpanan penuh, data tidak tersimpan permanen')}}
+function save(){LS.set('layers',layers.map(({id,name,color,visible,data})=>({id,name,color,visible,data})))||toast('Penyimpanan penuh, data tidak tersimpan permanen')}
 function fitAll(){const g=L.featureGroup(layers.filter(o=>o.visible).map(o=>o.group));if(g.getLayers().length)map.fitBounds(g.getBounds().pad(.1))}
 async function addFiles(files){
  for(const f of files){
@@ -149,56 +249,22 @@ async function addFiles(files){
  }
  render();save();fitAll();
 }
+$('#seg').onclick=e=>{const b=e.target.closest('[data-b]');if(!b)return;map.removeLayer(bases[bi].l);bi=+b.dataset.b;bases[bi].l.addTo(map);LS.set('base',bi);render()};
 $('#list').onclick=e=>{
  const b=e.target.closest('[data-a]');if(!b)return;
  const o=layers.find(x=>x.id==b.closest('.row').dataset.id),a=b.dataset.a;
- if(a=='zoom')map.fitBounds(o.group.getBounds().pad(.2),{maxZoom:17});
+ if(a=='zoom'){sheet(false);map.fitBounds(o.group.getBounds().pad(.2),{maxZoom:17})}
  if(a=='vis'){o.visible=!o.visible;o.visible?o.group.addTo(map):map.removeLayer(o.group)}
  if(a=='del'){if(!confirm(`Hapus layer "${o.name}"?`))return;map.removeLayer(o.group);layers=layers.filter(x=>x!==o)}
  render();save();
 };
+function sheet(on){$('#sheet').classList.toggle('on',on);$('#scrim').classList.toggle('on',on)}
+$('#layersBtn').onclick=()=>sheet(true);$('#scrim').onclick=()=>sheet(false);
 $('#add').onclick=()=>$('#file').click();
 $('#file').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
-$('#fit').onclick=fitAll;
-$('#grab').onclick=$('.head b').onclick=()=>$('#sheet').classList.toggle('min');
 
-/* ---------- Basemap, GPS ---------- */
-$('#base').onclick=()=>{map.removeLayer(bases[bi].l);bi=(bi+1)%bases.length;bases[bi].l.addTo(map);localStorage.setItem('base',bi);toast(bases[bi].n)};
-let meM,meC;
-map.on('locationfound',e=>{meM&&map.removeLayer(meM);meC&&map.removeLayer(meC);
- meM=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="me"></div>',iconSize:[16,16]})}).addTo(map);
- meC=L.circle(e.latlng,{radius:e.accuracy,color:'#1971c2',weight:1,fillOpacity:.08}).addTo(map)});
-map.on('locationerror',()=>toast('Lokasi tidak bisa diakses. Periksa izin GPS di browser.'));
-$('#gps').onclick=()=>map.locate({setView:true,maxZoom:17,enableHighAccuracy:true});
-
-/* ---------- Ukur jarak ---------- */
-let mOn=false,pts=[],mLine,mDots=[];
-const fmt=m=>m>=1000?(m/1000).toFixed(2)+' km':Math.round(m)+' m';
-function mUpdate(){
- mLine&&map.removeLayer(mLine);mLine=L.polyline(pts,{color:'#e8590c',weight:4,dashArray:'8 8'}).addTo(map);
- let d=0;for(let i=1;i<pts.length;i++)d+=pts[i-1].distanceTo(pts[i]);
- const c=$('#chip');c.style.display='block';c.textContent=pts.length?`Jarak ${fmt(d)} · ketuk lagi untuk lanjut`:'Ketuk peta untuk mulai mengukur';
-}
-function mClear(){pts=[];mDots.forEach(x=>map.removeLayer(x));mDots=[];mLine&&map.removeLayer(mLine);mLine=null}
-$('#ruler').onclick=function(){
- mOn=!mOn;this.classList.toggle('on',mOn);
- if(mOn){mUpdate()}else{mClear();$('#chip').style.display='none'}
-};
-map.on('click',e=>{if(!mOn)return;pts.push(e.latlng);mDots.push(L.circleMarker(e.latlng,{radius:5,color:'#fff',weight:2,fillColor:'#e8590c',fillOpacity:1}).addTo(map));mUpdate()});
-
-/* ---------- Pencarian ---------- */
-$('#q').addEventListener('keydown',e=>{
- if(e.key!='Enter')return;const v=e.target.value.trim();if(!v)return;e.target.blur();
- const m=v.match(/^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/);
- if(m){const ll=L.latLng(+m[1],+m[2]);map.setView(ll,16);L.popup().setLatLng(ll).setContent(`${m[1]}, ${m[2]}`).openOn(map);return}
- const q=v.toLowerCase();let hit=null;
- for(const o of layers){if(!o.visible)continue;o.group.eachLayer(l=>{const n=String((l.feature.properties||{}).name||'').toLowerCase();if(!hit&&n.includes(q))hit=l})}
- if(hit){hit.getLatLng?map.setView(hit.getLatLng(),17):map.fitBounds(hit.getBounds());hit.openPopup&&hit.openPopup()}
- else toast('Tidak ditemukan di layer yang tampil');
-});
-
-/* ---------- Muat data tersimpan, service worker ---------- */
-try{JSON.parse(localStorage.getItem('layers')||'[]').forEach(o=>{build(o);layers.push(o);uid=Math.max(uid,o.id)});if(layers.length){render();setTimeout(fitAll,100)}}catch(e){}
-render();
+/* ---------- Mulai ---------- */
+LS.get('layers',[]).forEach(o=>{build(o);layers.push(o);uid=Math.max(uid,o.id)});
+render();applyState();if(layers.length)setTimeout(fitAll,100);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
