@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14532d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Peta Saya</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#fbfaf6;--ink:#1c2a21;--mute:#66736b;--line:#dfe3da;--brand:#14532d;--accent:#e8590c;--r:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+#map{position:absolute;inset:0;background:#e9ece4}
+.top{position:absolute;z-index:500;top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:10px;display:flex;gap:8px}
+.top input{flex:1;min-width:0;height:48px;border:0;border-radius:24px;padding:0 18px;font:inherit;background:var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.fab{width:48px;height:48px;border:0;border-radius:50%;background:var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:20px;color:var(--ink);cursor:pointer;display:grid;place-items:center;flex:none}
+.fab.on{background:var(--accent);color:#fff}
+.side{position:absolute;z-index:500;right:10px;top:calc(70px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:8px}
+.sheet{position:absolute;z-index:600;left:0;right:0;bottom:0;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.25);padding:8px 14px calc(12px + env(safe-area-inset-bottom,0px));max-height:55%;display:flex;flex-direction:column;transition:transform .25s}
+.sheet.min{transform:translateY(calc(100% - 64px - env(safe-area-inset-bottom,0px)))}
+.grab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 8px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px}
+.head b{font-size:16px}
+.btn{border:0;border-radius:20px;background:var(--brand);color:#fff;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+.btn.alt{background:transparent;color:var(--brand);border:1.5px solid var(--brand)}
+.list{overflow:auto;margin-top:6px}
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.row .n{flex:1;min-width:0}
+.row .n div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .n small{color:var(--mute)}
+.ic{border:0;background:none;font-size:18px;padding:6px 8px;cursor:pointer;color:var(--ink)}
+.empty{color:var(--mute);padding:14px 0 6px}
+.chip{position:absolute;z-index:550;left:50%;transform:translateX(-50%);top:calc(68px + env(safe-area-inset-top,0px));background:var(--ink);color:#fff;border-radius:20px;padding:8px 14px;font-weight:600;display:none;white-space:nowrap}
+.pin{width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45)}
+.me{width:16px;height:16px;border-radius:50%;background:#1971c2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(25,113,194,.25)}
+.leaflet-popup-content{font:14px/1.4 system-ui,sans-serif}.leaflet-popup-content b{display:block;margin-bottom:2px}
+.toast{position:absolute;z-index:700;left:50%;top:calc(120px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;max-width:88%;display:none}
+</style></head><body>
+<div id="map"></div>
+<div class="top"><input id="q" placeholder="Cari titik atau ketik lat, lng" enterkeyhint="search"><button class="fab" id="gps" title="Lokasi saya">◎</button></div>
+<div class="side">
+  <button class="fab" id="base" title="Ganti peta">▦</button>
+  <button class="fab" id="ruler" title="Ukur jarak">⟷</button>
+  <button class="fab" id="fit" title="Tampilkan semua">⤢</button>
+</div>
+<div class="chip" id="chip"></div><div class="toast" id="toast"></div>
+<div class="sheet" id="sheet">
+  <div class="grab" id="grab"></div>
+  <div class="head"><b id="cnt">Layer</b><span><button class="btn" id="add">Tambah file</button></span></div>
+  <div class="list" id="list"></div>
+</div>
+<input type="file" id="file" multiple hidden accept=".gpx,.kml,.kmz,.geojson,.json,.csv,.txt">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const COLORS=['#e8590c','#1971c2','#2b8a3e','#ae3ec9','#c92a2a','#0c8599','#f08c00'];
+const map=L.map('map',{zoomControl:false}).setView([-6.2,106.82],11);
+L.control.zoom({position:'bottomleft'}).addTo(map);
+const bases=[
+ {n:'Peta jalan',l:L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'})},
+ {n:'Peta terang',l:L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap © CARTO'})},
+ {n:'Satelit',l:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'})}
+];
+let bi=+localStorage.getItem('base')||0;bases[bi].l.addTo(map);
+let layers=[],uid=0;
+
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',3500)}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ---------- Parser ---------- */
+function xml(t){const d=new DOMParser().parseFromString(t,'text/xml');if(d.querySelector('parsererror'))throw Error('XML tidak valid');return d}
+const tx=(el,tag)=>{const n=el.getElementsByTagName(tag)[0];return n?n.textContent.trim():''};
+function parseGPX(t){
+ const d=xml(t),f=[];
+ for(const w of d.getElementsByTagName('wpt'))f.push({type:'Feature',properties:{name:tx(w,'name'),desc:tx(w,'desc')},geometry:{type:'Point',coordinates:[+w.getAttribute('lon'),+w.getAttribute('lat')]}});
+ for(const k of d.getElementsByTagName('trk')){
+  const segs=[...k.getElementsByTagName('trkseg')].map(s=>[...s.getElementsByTagName('trkpt')].map(p=>[+p.getAttribute('lon'),+p.getAttribute('lat')]));
+  f.push({type:'Feature',properties:{name:tx(k,'name')},geometry:{type:'MultiLineString',coordinates:segs}});
+ }
+ for(const r of d.getElementsByTagName('rte'))f.push({type:'Feature',properties:{name:tx(r,'name')},geometry:{type:'LineString',coordinates:[...r.getElementsByTagName('rtept')].map(p=>[+p.getAttribute('lon'),+p.getAttribute('lat')])}});
+ return f;
+}
+const kc=s=>s.trim().split(/\s+/).map(p=>p.split(',').map(Number)).filter(a=>a.length>=2&&!isNaN(a[0]));
+function parseKML(t){
+ const d=xml(t),f=[];
+ for(const p of d.getElementsByTagName('Placemark')){
+  const props={name:tx(p,'name'),desc:tx(p,'description')},g=[];
+  for(const e of p.getElementsByTagName('Point'))g.push({type:'Point',coordinates:kc(tx(e,'coordinates'))[0]});
+  for(const e of p.getElementsByTagName('LineString'))g.push({type:'LineString',coordinates:kc(tx(e,'coordinates'))});
+  for(const e of p.getElementsByTagName('Polygon')){const ob=e.getElementsByTagName('outerBoundaryIs')[0];if(ob)g.push({type:'Polygon',coordinates:[kc(tx(ob,'coordinates'))]})}
+  g.filter(x=>x.coordinates&&x.coordinates.length).forEach(x=>f.push({type:'Feature',properties:props,geometry:x}));
+ }
+ return f;
+}
+function splitCSV(line,sep){const o=[];let c='',q=false;for(const ch of line){if(ch=='"')q=!q;else if(ch==sep&&!q){o.push(c);c=''}else c+=ch}o.push(c);return o.map(s=>s.trim())}
+function parseCSV(t){
+ const lines=t.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());
+ const sep=[';','\t',','].find(s=>lines[0].includes(s))||',';
+ const h=splitCSV(lines[0],sep).map(s=>s.toLowerCase());
+ const find=(...k)=>h.findIndex(x=>k.includes(x));
+ let la=find('lat','latitude','y','lintang'),lo=find('lng','lon','long','longitude','x','bujur'),nm=find('name','nama','title','label');
+ if(la<0||lo<0)throw Error('CSV butuh kolom lat dan lng');
+ return lines.slice(1).map(l=>{const c=splitCSV(l,sep),p={};h.forEach((k,i)=>p[k]=c[i]);
+  p.name=nm>=0?c[nm]:'';const lat=parseFloat(c[la].replace(',','.')),lng=parseFloat(c[lo].replace(',','.'));
+  return isNaN(lat)||isNaN(lng)?null:{type:'Feature',properties:p,geometry:{type:'Point',coordinates:[lng,lat]}}}).filter(Boolean);
+}
+async function readFile(file){
+ const ext=file.name.split('.').pop().toLowerCase();let feats;
+ if(ext=='kmz'){const z=await JSZip.loadAsync(await file.arrayBuffer());const k=Object.keys(z.files).find(n=>n.toLowerCase().endsWith('.kml'));if(!k)throw Error('KMZ tanpa KML');feats=parseKML(await z.files[k].async('string'))}
+ else{const t=await file.text();
+  if(ext=='gpx')feats=parseGPX(t);else if(ext=='kml')feats=parseKML(t);
+  else if(ext=='csv'||ext=='txt')feats=parseCSV(t);
+  else{const j=JSON.parse(t);feats=j.type=='FeatureCollection'?j.features:j.type=='Feature'?[j]:[{type:'Feature',properties:{},geometry:j}]}}
+ if(!feats.length)throw Error('Tidak ada data lokasi');
+ return {type:'FeatureCollection',features:feats};
+}
+
+/* ---------- Layer ---------- */
+function build(o){
+ const c=o.color;
+ o.group=L.geoJSON(o.data,{
+  pointToLayer:(f,ll)=>L.marker(ll,{icon:L.divIcon({className:'',html:`<div class="pin" style="background:${c}"></div>`,iconSize:[22,22],iconAnchor:[6,22],popupAnchor:[5,-20]})}),
+  style:()=>({color:c,weight:4,fillOpacity:.2}),
+  onEachFeature:(f,l)=>{const p=f.properties||{};const ex=Object.entries(p).filter(([k,v])=>v&&!['name','nama','desc'].includes(k)).slice(0,6).map(([k,v])=>`${esc(k)}: ${esc(v)}`).join('<br>');
+   l.bindPopup(`<b>${esc(p.name||p.nama||'Tanpa nama')}</b>${esc(p.desc||'')}${ex?'<br>'+ex:''}`)}
+ });
+ if(o.visible)o.group.addTo(map);
+}
+function render(){
+ $('#cnt').textContent=layers.length?`Layer (${layers.length})`:'Layer';
+ $('#list').innerHTML=layers.length?layers.map(o=>`<div class="row" data-id="${o.id}">
+  <span class="dot" style="background:${o.color}"></span>
+  <div class="n"><div>${esc(o.name)}</div><small>${o.data.features.length} objek</small></div>
+  <button class="ic" data-a="zoom" title="Perbesar">⌖</button>
+  <button class="ic" data-a="vis" title="Tampil/sembunyi">${o.visible?'👁':'○'}</button>
+  <button class="ic" data-a="del" title="Hapus">✕</button></div>`).join(''):'<div class="empty">Belum ada data. Tambahkan file GPX, KML, KMZ, GeoJSON, atau CSV.</div>';
+}
+function save(){try{localStorage.setItem('layers',JSON.stringify(layers.map(({id,name,color,visible,data})=>({id,name,color,visible,data}))))}catch(e){toast('Penyimpanan penuh, data tidak tersimpan permanen')}}
+function fitAll(){const g=L.featureGroup(layers.filter(o=>o.visible).map(o=>o.group));if(g.getLayers().length)map.fitBounds(g.getBounds().pad(.1))}
+async function addFiles(files){
+ for(const f of files){
+  try{const data=await readFile(f);const o={id:++uid,name:f.name.replace(/\.[^.]+$/,''),color:COLORS[layers.length%COLORS.length],visible:true,data};
+   build(o);layers.push(o);toast(`${o.name}: ${data.features.length} objek dimuat`)}
+  catch(e){toast(`${f.name}: ${e.message}`)}
+ }
+ render();save();fitAll();
+}
+$('#list').onclick=e=>{
+ const b=e.target.closest('[data-a]');if(!b)return;
+ const o=layers.find(x=>x.id==b.closest('.row').dataset.id),a=b.dataset.a;
+ if(a=='zoom')map.fitBounds(o.group.getBounds().pad(.2),{maxZoom:17});
+ if(a=='vis'){o.visible=!o.visible;o.visible?o.group.addTo(map):map.removeLayer(o.group)}
+ if(a=='del'){if(!confirm(`Hapus layer "${o.name}"?`))return;map.removeLayer(o.group);layers=layers.filter(x=>x!==o)}
+ render();save();
+};
+$('#add').onclick=()=>$('#file').click();
+$('#file').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+$('#fit').onclick=fitAll;
+$('#grab').onclick=$('.head b').onclick=()=>$('#sheet').classList.toggle('min');
+
+/* ---------- Basemap, GPS ---------- */
+$('#base').onclick=()=>{map.removeLayer(bases[bi].l);bi=(bi+1)%bases.length;bases[bi].l.addTo(map);localStorage.setItem('base',bi);toast(bases[bi].n)};
+let meM,meC;
+map.on('locationfound',e=>{meM&&map.removeLayer(meM);meC&&map.removeLayer(meC);
+ meM=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="me"></div>',iconSize:[16,16]})}).addTo(map);
+ meC=L.circle(e.latlng,{radius:e.accuracy,color:'#1971c2',weight:1,fillOpacity:.08}).addTo(map)});
+map.on('locationerror',()=>toast('Lokasi tidak bisa diakses. Periksa izin GPS di browser.'));
+$('#gps').onclick=()=>map.locate({setView:true,maxZoom:17,enableHighAccuracy:true});
+
+/* ---------- Ukur jarak ---------- */
+let mOn=false,pts=[],mLine,mDots=[];
+const fmt=m=>m>=1000?(m/1000).toFixed(2)+' km':Math.round(m)+' m';
+function mUpdate(){
+ mLine&&map.removeLayer(mLine);mLine=L.polyline(pts,{color:'#e8590c',weight:4,dashArray:'8 8'}).addTo(map);
+ let d=0;for(let i=1;i<pts.length;i++)d+=pts[i-1].distanceTo(pts[i]);
+ const c=$('#chip');c.style.display='block';c.textContent=pts.length?`Jarak ${fmt(d)} · ketuk lagi untuk lanjut`:'Ketuk peta untuk mulai mengukur';
+}
+function mClear(){pts=[];mDots.forEach(x=>map.removeLayer(x));mDots=[];mLine&&map.removeLayer(mLine);mLine=null}
+$('#ruler').onclick=function(){
+ mOn=!mOn;this.classList.toggle('on',mOn);
+ if(mOn){mUpdate()}else{mClear();$('#chip').style.display='none'}
+};
+map.on('click',e=>{if(!mOn)return;pts.push(e.latlng);mDots.push(L.circleMarker(e.latlng,{radius:5,color:'#fff',weight:2,fillColor:'#e8590c',fillOpacity:1}).addTo(map));mUpdate()});
+
+/* ---------- Pencarian ---------- */
+$('#q').addEventListener('keydown',e=>{
+ if(e.key!='Enter')return;const v=e.target.value.trim();if(!v)return;e.target.blur();
+ const m=v.match(/^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/);
+ if(m){const ll=L.latLng(+m[1],+m[2]);map.setView(ll,16);L.popup().setLatLng(ll).setContent(`${m[1]}, ${m[2]}`).openOn(map);return}
+ const q=v.toLowerCase();let hit=null;
+ for(const o of layers){if(!o.visible)continue;o.group.eachLayer(l=>{const n=String((l.feature.properties||{}).name||'').toLowerCase();if(!hit&&n.includes(q))hit=l})}
+ if(hit){hit.getLatLng?map.setView(hit.getLatLng(),17):map.fitBounds(hit.getBounds());hit.openPopup&&hit.openPopup()}
+ else toast('Tidak ditemukan di layer yang tampil');
+});
+
+/* ---------- Muat data tersimpan, service worker ---------- */
+try{JSON.parse(localStorage.getItem('layers')||'[]').forEach(o=>{build(o);layers.push(o);uid=Math.max(uid,o.id)});if(layers.length){render();setTimeout(fitAll,100)}}catch(e){}
+render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
